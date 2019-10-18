@@ -26,12 +26,13 @@ CREATE TABLE IF NOT EXISTS `projetoredes`.`artistas` (
   `id_artistas` VARCHAR(45) NOT NULL,
   `nome` VARCHAR(45) NOT NULL UNIQUE,
   `popularidade` INT NOT NULL,
-  PRIMARY KEY (`id_artistas`))
+  PRIMARY KEY (`id_artistas`)
+  )
 ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `projetoredes`.`edges` (
   `origem` VARCHAR(100) NOT NULL,
-  `destino` VARCHAR(100) NOT NULL ,
+  `destino` VARCHAR(100) NOT NULL
   )
 ENGINE = InnoDB;
 
