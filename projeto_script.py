@@ -1,5 +1,6 @@
 import sys
 import os
+import networkx as nx
 from functools import partial
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -127,13 +128,14 @@ def top_tracks_filter(api, top_tracks):
 def main():
 
     args = sys.argv
-    # if "-v" in args:
-    #     VERBOSE = True
+    if "-v" in args:
+        VERBOSE = True
 
-    # if '--save' in args:
-    #     save = True
-    # else:
-    #     save = False
+    if '--save' in args:
+        save = True
+    else:
+        save = False
+
     #######################AUTHS & CONNECT###############################
     connection = pymysql.connect(
         host='172.17.0.2',
@@ -141,7 +143,7 @@ def main():
         password='123',
         database='projetoredes',
         autocommit=True)
-    db_connection = partial(run_db_query, connection)
+    # db_connection = partial(run_db_query, connection)
 
     client_credentials_manager = SpotifyClientCredentials(
         client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
@@ -153,25 +155,39 @@ def main():
 
     infos = artist_filter(artist_info)  # Get some filtered artist infos
 
+    if save:
+        cursor = connection.cursor()
+        q = ('INSERT INTO artistas (id_artistas, nome, popularidade) VALUES (%s, %s, %s)')
+        cursor.execute(q, (infos['artist_id'], infos['artist_name'], infos['artist_popularity']))
+        cursor.close()
+
     tops = get_top_tracks(api, artist_info)
 
     filtered = top_tracks_filter(api, tops)  # Get top tracks infos
-
+    # print(VERBOSE)
     # if VERBOSE:
-    debug_print(infos, filtered, 0)
+    #     debug_print(infos, filtered, 0)
 
-    related = get_related_artists(api, EGO_USERNAME, connection, False)
+    related = get_related_artists(api, EGO_USERNAME, connection, save)
 
     # print(related)
     ##################Artistas relacionados##############################
+    
     for related_artist in related:
+        edge = (infos['artist_name'], related_artist['name'])
+        cursor = connection.cursor()
+        q = ('INSERT INTO edges (origem, destino) VALUES (%s, %s)')
+        cursor.execute(q, (infos['artist_name'], related_artist['name']))
+        cursor.close()
 
+        # related = get_related_artists(api, related_artist, connection, save)
         tops = get_top_tracks(api, related_artist)
 
         filtered = top_tracks_filter(api, tops)  # Get top tracks infos
+        # if VERBOSE:
+        #     debug_print(related_artist, filtered, 1)
 
-        debug_print(related_artist, filtered, 1)
-
-
+    #####################################################################
+    
 if __name__ == '__main__':
     main()
