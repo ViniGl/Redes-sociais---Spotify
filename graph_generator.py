@@ -1,5 +1,7 @@
 import networkx as nx
 import pymysql
+import sys
+import matplotlib.pyplot as plt 
 
 
 #######################AUTHS & CONNECT###############################
@@ -12,6 +14,11 @@ connection = pymysql.connect(
 # db_connection = partial(run_db_query, connection)
 #####################################################################
 
+
+args = sys.argv
+write = False
+if '-w' in args:
+    write = true
    
 cursor = connection.cursor()
 q = ('SELECT nome, popularidade FROM artistas')
@@ -42,6 +49,31 @@ for artist in infos:
 
 graph.add_edges_from(edges)
 
-print("\n".join(nx.generate_gml(graph)))
+if write:
+    f = open('rock.gml', 'w')
+
+    f.write("\n".join(nx.generate_gml(graph)))
+
+    f.close()
+
 b = nx.betweenness_centrality(graph)
-print(b)
+# b = nx.closeness_centrality(graph)
+
+
+y = []
+x = []
+for artist in infos:
+    between = b[artist]
+    pop = infos[artist]
+    
+    if (between != 0):
+        x.append(between)
+        y.append(pop)
+
+
+print(x)
+print(y)
+
+plt.scatter(x ,y)
+
+plt.show()
