@@ -7,6 +7,6 @@ Projeto de redes socias - Insper
   #!/bin/bash
 
   export CLIENT_ID=''
-  export CLIENT_SECRET=''```
+  export CLIENT_SECRET=''
   
 
