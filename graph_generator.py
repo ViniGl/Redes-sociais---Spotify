@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 
 #######################AUTHS & CONNECT###############################
 connection = pymysql.connect(
-    host='172.17.0.2',
-    user='root',
-    password='123',
+    host='localhost',
+    user='megadados',
+    password='megadados2019',
     database='projetoredes',
     autocommit=True)
 # db_connection = partial(run_db_query, connection)
@@ -31,6 +31,44 @@ q = ('SELECT origem, destino FROM edges')
 cursor.execute(q)
 result_edge = cursor.fetchall()
 cursor.close()
+
+cursor = connection.cursor()
+q = ('SELECT * FROM musicas')
+cursor.execute(q)
+all_musics = cursor.fetchall()
+cursor.close()
+def get_music_id(nome_musica):
+    cursor = connection.cursor()
+    q = ('SELECT id_musicas FROM musicas WHERE nome=%s')
+    cursor.execute(q,(nome_musica))
+    music_id = cursor.fetchone()
+    cursor.close()
+    return music_id
+    
+def get_music_playlists(id_musica):
+    cursor = connection.cursor()
+    q = ('SELECT playlist.nome FROM playlist_musicas, INNER JOIN playlist using(id_playlist) WHERE playlist_musicas.id_musica=%s')
+    cursor.execute(q,(id_musica))
+    playlists_nomes = cursor.fetchall()
+    cursor.close()
+    return playlists_nomes
+def get_playlists():
+    cursor = connection.cursor()
+    q = ('SELECT nome FROM playlist')
+    cursor.execute(q)
+    playlists_nomes = cursor.fetchall()
+    cursor.close()
+    return playlists_nomes
+def get_musics_of_playlist(playlist_name):
+    cursor = connection.cursor()
+    q = ('SELECT musicas.nome FROM playlist , INNER JOIN playlist_musicas using(id_playlist), INNER JOIN musicas using(id_musica) WHERE playlist.nome=%s')
+    cursor.execute(q,(playlist_name))
+    musicas_da_playlist = cursor.fetchall()
+    cursor.close()
+    return musicas_da_playlist
+
+
+
 
 
 infos = {}
