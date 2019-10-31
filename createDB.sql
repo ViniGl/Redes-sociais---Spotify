@@ -24,8 +24,8 @@ USE `projetoredes` ;
 DROP TABLE IF EXISTS `projetoredes`.`artistas` ;
 
 CREATE TABLE IF NOT EXISTS `projetoredes`.`artistas` (
-  `nome_artistas` INT NOT NULL,
-  `nome` VARCHAR(45) NOT NULL,
+  `nome_artistas` VARCHAR(100) NOT NULL,
+  `nome` VARCHAR(100) NOT NULL,
   `popularidade` INT NOT NULL,
   PRIMARY KEY (`nome_artistas`))
 ENGINE = InnoDB;
@@ -37,20 +37,17 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `projetoredes`.`musicas` ;
 
 CREATE TABLE IF NOT EXISTS `projetoredes`.`musicas` (
-  `id_musicas` INT NOT NULL AUTO_INCREMENT ,
+  `id_musicas` INT NOT NULL AUTO_INCREMENT,
   `nome` VARCHAR(45) NULL,
+  `id_spotify` VARCHAR(45) NOT NULL UNIQUE,
   `popularidade` INT NOT NULL,
   `duracao` INT NOT NULL,
   `energia` INT NOT NULL,
   `dancabilidade` INT NOT NULL,
-  `nome_artistas` INT NOT NULL,
-  PRIMARY KEY (`id_musicas`),
-  INDEX `artistas_id_idx` (`nome_artistas` ASC) VISIBLE,
-  CONSTRAINT `artistas_id`
-    FOREIGN KEY (`nome_artistas`)
-    REFERENCES `projetoredes`.`artistas` (`nome_artistas`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+  `nome_artistas` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`id_musicas`)
+)
+  
 ENGINE = InnoDB;
 
 

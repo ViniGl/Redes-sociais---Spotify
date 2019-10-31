@@ -20,6 +20,8 @@ EGO_USERNAME = r'6mdiAmATAx73kdxrNrnlao'  # Iron maiden ID
 OUTPUT_PATH = r'spotify'
 
 VERBOSE = False
+save = False
+
 
 def run_db_query(connection, query, args=None):
     with connection.cursor() as cursor:
@@ -49,7 +51,7 @@ def get_related_artists(api, ego_username, connection, save):
 
     related = api.artist_related_artists(ego_username)
     artists = related['artists']
-    
+
     # print(related)
     if save:
         for artist in artists:
@@ -59,8 +61,10 @@ def get_related_artists(api, ego_username, connection, save):
                 artist_popularidade = artist['popularity']
                 if VERBOSE:
                     print("Artista/Banda: {} , id: {}".format(artist_nome, artist_id))
-                q = ('INSERT INTO artistas (id_artistas, nome, popularidade) VALUES (%s, %s, %s)')
-                cursor.execute(q, (artist_id, artist_nome, artist_popularidade))
+                q = (
+                    'INSERT INTO artistas (id_artistas, nome, popularidade) VALUES (%s, %s, %s)')
+                cursor.execute(
+                    q, (artist_id, artist_nome, artist_popularidade))
             except:
                 pass
         cursor.close()
@@ -93,8 +97,9 @@ Id : {}
 '''.format(infos['artist_name'], infos['artist_popularity'], infos['artist_id']))
 
     else:
-        print("Artista: {} // Popularidade: {} ".format(infos['name'], infos['popularity']))
-    
+        print(
+            "Artista: {} // Popularidade: {} ".format(infos['name'], infos['popularity']))
+
     for top_filtered in filtered:
         # pass
         print('''\
@@ -105,9 +110,12 @@ Id : {}
 
 def track_analysis(api, song_id):
     data = api.audio_features(song_id)[0]
-    danceability = data['danceability']
-    energy = data['energy']
-    return (danceability, energy)
+
+    analysis = {}
+
+    analysis['danceability'] = data['danceability']
+    analysis['energy'] = data['energy']
+    return analysis
 
 
 def top_tracks_filter(api, top_tracks):
@@ -129,12 +137,14 @@ def top_tracks_filter(api, top_tracks):
 
     return songs
 
+
 def get_categories(api):
     categories = api.categories()
     cats = {}
     for i in categories['categories']['items']:
         cats[i['name']] = i['id']
     return cats
+
 
 def get_playlists(api, category_id):
     playlist = api.category_playlists(category_id)
@@ -148,23 +158,111 @@ def get_playlists(api, category_id):
 
 
 def playlist_song_relation(api, playlists):
-    
+
     songs_playlist = {}
 
     for pl in playlists:
 
-        a = requests.get(playlists[pl]['href'], headers={"Accept": "application/json","Content-Type": "application/json", "Authorization": "Bearer {}".format(ACCESS_TOKEN)})
+        a = requests.get(playlists[pl]['href'], headers={
+                         "Accept": "application/json", "Content-Type": "application/json", "Authorization": "Bearer {}".format(ACCESS_TOKEN)})
 
-        tracks_infos = []
+        
+        playlist_tracks = []
         for song in a.json()['items']:
-            song_name = song['track']['name']
-            song_artist = song['track']['album']['artists'][0]['name']
-            song_popularity = song['track']['popularity']
+            track_infos = {}
+            # print(song['track']['name'])
+            track_infos['song_id'] = song['track']['id']
+            track_infos['song_name'] = song['track']['name']
+            track_infos['song_artist'] = song['track']['album']['artists'][0]['name']
+            track_infos['song_popularity'] = song['track']['popularity']
+            track_infos['song_lenght'] = song['track']['duration_ms']
 
-            tracks_infos.append((song_name, song_popularity))
+            playlist_tracks.append(track_infos)
+        
+        # print(playlist_tracks)
+        songs_playlist[pl] = playlist_tracks
 
-        songs_playlist[pl] = tracks_infos
     return songs_playlist
+
+
+def get_id_playlist(api, connection, nome):
+    cursor = connection.cursor()
+    q = ('SELECT id_playlist FROM playlist WHERE nome=%s')
+    cursor.execute(q, (nome))
+    id = cursor.fetchone()
+    cursor.close()
+    return id
+
+def get_id_song(api, connection, id_spotify):
+    cursor = connection.cursor()
+    q = ('SELECT id_musicas FROM musicas WHERE id_spotify=%s')
+    cursor.execute(q, (id_spotify))
+    id = cursor.fetchone()
+    cursor.close()
+    return id
+
+
+
+def insert_playlist(api, connection, raw_playlist, genero):
+
+    cursor = connection.cursor()
+    for playlist in raw_playlist:
+        q = ('INSERT INTO playlist (nome, genero) VALUES (%s, %s)')
+        cursor.execute(q, (playlist, genero))
+    cursor.close()
+
+
+def insert_musica_playlist(api, connection, raw_playlist):
+
+    cursor = connection.cursor()
+    for playlist in raw_playlist:
+
+        playlist_id = get_id_playlist(api, connection, playlist)
+
+        for song in raw_playlist[playlist]:
+
+            #Insere musica
+            try:
+                q = ('INSERT INTO musicas (nome, id_spotify, popularidade, duracao, energia, dancabilidade, nome_artistas) VALUES (%s, %s, %s, %s, %s,%s, %s)')
+                cursor.execute(q, (song['song_name'], song['song_id'], song['song_popularity'], song['song_lenght'],
+                                song['energy'], song['danceability'], song['song_artist']))
+            except:
+                pass
+            
+            #Insere na tabela intermediaria
+            try:
+                song_id = get_id_song(api, connection, song['song_id'])
+                q = ('INSERT INTO playlist_musicas (id_playlist, id_musicas) VALUES (%s, %s)')
+                cursor.execute(q, (playlist_id, song_id))
+            except Exception as e:
+                print(e) 
+           
+    cursor.close()
+
+
+def update_playlist_songs_info(api, raw_two_way):
+    total = len(raw_two_way)
+    actual = 0
+    for playlist in raw_two_way:
+        total_song = len(raw_two_way[playlist])
+        actual_song = 0
+        for song in raw_two_way[playlist]:
+            # print(song['song_name'])
+            song_id = song['song_id']
+            analyse = track_analysis(api, song_id)
+
+            danceability = analyse['danceability']
+            energy = analyse['energy']
+            song['danceability'] = danceability
+            song['energy'] = energy
+        
+            actual_song += 1
+            print("Musica em playlist : {} -- Total :{} %".format(playlist,   (actual_song/total_song) * 100))
+    
+        actual += 1
+        print("#"*100)
+        print("Playlist total : {} %".format( (actual/total) * 100))
+        print("#"*100)
 
 def main():
     args = sys.argv
@@ -173,8 +271,6 @@ def main():
 
     if '--save' in args:
         save = True
-    else:
-        save = False
 
     #######################AUTHS & CONNECT###############################
     connection = pymysql.connect(
@@ -190,83 +286,30 @@ def main():
 
     api = Spotify(client_credentials_manager=client_credentials_manager)
     #####################################################################
+    
+    print('GETTING ALL CATEGORIES')
     all_categories = get_categories(api)
 
     category_1 = "Rock"
     # category_2 = "Sertanejo"
 
-
+    print('GET ALL PLAYLISTS FROM A CATEGORY')
     playlists_rock = get_playlists(api, all_categories[category_1])
     # playlists_sertanejo = get_playlists(api, all_categories[category_2])
     # print(playlists_rock)
 
-    two_way = playlist_song_relation(api, playlists_rock)
+    print('MAKING RAW_TWO_WAY')
+    raw_two_way = playlist_song_relation(api, playlists_rock)
+
+    print('ENERGY + DANCEABILITY')
+    update_playlist_songs_info(api, raw_two_way)
 
 
+    if save:
+        print('SAVING')
+        insert_playlist(api, connection, raw_two_way, category_1)
+        insert_musica_playlist(api, connection, raw_two_way)
 
-    for i in two_way:
-        for u in two_way[i]:
-            print(u)
 
-
-
-    ######################################################################
-    # artist_info = get_name(api, EGO_USERNAME)
-
-    # infos = artist_filter(artist_info)  # Get some filtered artist infos
-
-    # if save:
-    #     cursor = connection.cursor()
-    #     q = ('INSERT INTO artistas (id_artistas, nome, popularidade) VALUES (%s, %s, %s)')
-    #     cursor.execute(q, (infos['artist_id'], infos['artist_name'], infos['artist_popularity']))
-    #     cursor.close()
-
-    # tops = get_top_tracks(api, artist_info)
-
-    # filtered = top_tracks_filter(api, tops)  # Get top tracks infos
-    # print(VERBOSE)
-    # if VERBOSE:
-    #     debug_print(infos, filtered, 0)
-
-    # related = get_related_artists(api, EGO_USERNAME, connection, save)
-
-    # print(related)
-    ##################Artistas relacionados##############################
-    
-    # count = 0
-    # limit = 100
-
-    # ids = []
-
-    # ids.append(artist_info)
-        
-    # while count <= limit :
-        
-    #     if save:
-    #         cursor = connection.cursor()
-    #         q = ('SELECT nome FROM artistas')
-    #         cursor.execute(q)
-    #         result = cursor.fetchall()
-    #         cursor.close()
-
-        
-    #     current = ids[0]
-    #     print(current['name'])
-    #     related = get_related_artists(api, current['id'], connection, save)
-    #     for related_artist in related:
-    #         if save:
-    #             cursor = connection.cursor()
-    #             q = ('INSERT INTO edges (origem, destino) VALUES (%s, %s)')
-    #             cursor.execute(q, (current['name'], related_artist['name']))
-    #             cursor.close()
-    #         # print(related_artist)
-    #         if (related_artist['name'] not in result):
-    #             ids.append(related_artist)
-
-    
-    #     ids.pop(0)
-    #     count += 1
-    #####################################################################
-    
 if __name__ == '__main__':
     main()
