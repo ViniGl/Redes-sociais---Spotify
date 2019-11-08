@@ -168,24 +168,27 @@ def playlist_song_relation(api, playlists):
     songs_playlist = {}
 
     for pl in playlists:
-
         a = requests.get(playlists[pl]['href'], headers={
                          "Accept": "application/json", "Content-Type": "application/json", "Authorization": "Bearer {}".format(ACCESS_TOKEN)})
-
         
         playlist_tracks = []
         for song in a.json()['items']:
             track_infos = {}
             # print(song['track']['name'])
-            track_infos['song_id'] = song['track']['id']
-            track_infos['song_name'] = song['track']['name']
-            track_infos['song_artist'] = song['track']['album']['artists'][0]['name']
-            track_infos['song_popularity'] = song['track']['popularity']
-            track_infos['song_lenght'] = song['track']['duration_ms']
-
-            playlist_tracks.append(track_infos)
+            try:
+                track_infos['song_id'] = song['track']['id']
+                track_infos['song_name'] = song['track']['name']
+                track_infos['song_artist'] = song['track']['album']['artists'][0]['name']
+                track_infos['song_popularity'] = song['track']['popularity']
+                track_infos['song_lenght'] = song['track']['duration_ms']
+                playlist_tracks.append(track_infos)
+            except Exception as e:
+                print("\n"*10)
+                print(str(e))
+                print("\n"*10)
+                pass
         
-        # print(playlist_tracks)
+        print(playlist_tracks)
         songs_playlist[pl] = playlist_tracks
 
     return songs_playlist
@@ -229,10 +232,13 @@ def insert_musica_playlist(api, connection, raw_playlist):
 
             #Insere musica
             try:
+                song["energy"]=0
+                song["danceability"]=0
                 q = ('INSERT INTO musicas (nome, id_spotify, popularidade, duracao, energia, dancabilidade, nome_artistas) VALUES (%s, %s, %s, %s, %s,%s, %s)')
-                cursor.execute(q, (song['song_name'], song['song_id'], song['song_popularity'], song['song_lenght'],
-                                song['energy'], song['danceability'], song['song_artist']))
-            except:
+                cursor.execute(q, (song["song_name"], song["song_id"], song["song_popularity"], song["song_lenght"],
+                                song["energy"], song["danceability"], song["song_artist"]))
+            except Exception as e:
+                print("Insercao" + str(e))
                 pass
             
             #Insere na tabela intermediaria
@@ -241,7 +247,9 @@ def insert_musica_playlist(api, connection, raw_playlist):
                 q = ('INSERT INTO playlist_musicas (id_playlist, id_musicas) VALUES (%s, %s)')
                 cursor.execute(q, (playlist_id, song_id))
             except Exception as e:
-                print(e) 
+                print("Insercao playkist_song" + str(e))
+
+                pass
            
     cursor.close()
 
@@ -264,7 +272,7 @@ def update_playlist_songs_info(api, raw_two_way):
                 song['energy'] = energy
             
             actual_song += 1
-            print("Musica em playlist : {} -- Total :{} %".format(playlist,   (actual_song/total_song) * 100))
+            # print("Musica em playlist : {} -- Total :{} %".format(playlist,   (actual_song/total_song) * 100))
     
         actual += 1
         print("#"*100)
@@ -281,9 +289,9 @@ def main():
 
     #######################AUTHS & CONNECT###############################
     connection = pymysql.connect(
-        host='172.17.0.2',
-        user='root',
-        password='123',
+        host='127.0.0.1',
+        user='megadados',
+        password='megadados2019',
         database='projetoredes',
         autocommit=True)
     # db_connection = partial(run_db_query, connection)
@@ -296,26 +304,42 @@ def main():
     
     print('GETTING ALL CATEGORIES')
     all_categories = get_categories(api)
+    categories=["Chill","Party","Workout","Hip-Hop","Rock","Reggae","Classical","Electronic/Dance","Blues"]
 
-    category_1 = "Pop"
+    # print(all_categories)
+
     # category_2 = "Sertanejo"
 
     print('GET ALL PLAYLISTS FROM A CATEGORY')
-    playlists_rock = get_playlists(api, all_categories[category_1])
+    dict_of_playlist_of_categories={}
+    for categorie in categories:
+        playlists = get_playlists(api, all_categories[categorie])
+        dict_of_playlist_of_categories[categorie]=playlists
+    # print(dict_of_playlist_of_categories["Rock"])
+
+    # raise Exception
+
     # playlists_sertanejo = get_playlists(api, all_categories[category_2])
     # print(playlists_rock)
 
     print('MAKING RAW_TWO_WAY')
-    raw_two_way = playlist_song_relation(api, playlists_rock)
+    for playlists in dict_of_playlist_of_categories: 
+        raw_two_way = playlist_song_relation(api,dict_of_playlist_of_categories[playlists])
+        dict_of_playlist_of_categories[playlists]["raw_two_way"]=raw_two_way
+        #     raw_two_way = playlist_song_relation(api, playlist)
+        #     print(raw_two_way)
+        #     raise Exception
 
-    print('ENERGY + DANCEABILITY')
-    update_playlist_songs_info(api, raw_two_way)
+
+    # print('ENERGY + DANCEABILITY')
+    # update_playlist_songs_info(api, raw_two_way)
 
 
     if save:
         print('SAVING')
-        insert_playlist(api, connection, raw_two_way, category_1)
-        insert_musica_playlist(api, connection, raw_two_way)
+        for playlists in dict_of_playlist_of_categories:
+            insert_playlist(api, connection, dict_of_playlist_of_categories[playlists]["raw_two_way"], playlists)
+            insert_musica_playlist(api, connection, dict_of_playlist_of_categories[playlists]["raw_two_way"])
 
 
 if __name__ == '__main__':

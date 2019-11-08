@@ -37,14 +37,14 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `projetoredes`.`musicas` ;
 
 CREATE TABLE IF NOT EXISTS `projetoredes`.`musicas` (
-  `id_musicas` INT NOT NULL AUTO_INCREMENT,
+  `id_musicas` INT AUTO_INCREMENT,
   `nome` VARCHAR(45) NULL,
   `id_spotify` VARCHAR(45) NOT NULL UNIQUE,
   `popularidade` INT NOT NULL,
   `duracao` INT NOT NULL,
-  `energia` INT NOT NULL,
-  `dancabilidade` INT NOT NULL,
-  `nome_artistas` VARCHAR(100) NOT NULL,
+  `energia` INT ,
+  `dancabilidade` INT,
+  `nome_artistas` VARCHAR(100),
   PRIMARY KEY (`id_musicas`)
 )
   
@@ -58,7 +58,7 @@ DROP TABLE IF EXISTS `projetoredes`.`playlist` ;
 
 CREATE TABLE IF NOT EXISTS `projetoredes`.`playlist` (
   `id_playlist` INT NOT NULL AUTO_INCREMENT,
-  `nome` VARCHAR(45) NULL,
+  `nome` VARCHAR(450) NULL,
   `genero` VARCHAR(45) NULL,
   PRIMARY KEY (`id_playlist`))
 ENGINE = InnoDB;
