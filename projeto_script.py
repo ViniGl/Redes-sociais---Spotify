@@ -112,10 +112,14 @@ def track_analysis(api, song_id):
     data = api.audio_features(song_id)[0]
 
     analysis = {}
-
-    analysis['danceability'] = data['danceability']
-    analysis['energy'] = data['energy']
-    return analysis
+    try:
+        analysis['danceability'] = data['danceability']
+        analysis['energy'] = data['energy']
+        return analysis
+    except:
+        print("ERRO! Pulando analise da musica ID: {0} ".format(song_id))
+        print(data)
+        return None
 
 
 def top_tracks_filter(api, top_tracks):
@@ -130,10 +134,12 @@ def top_tracks_filter(api, top_tracks):
         collected['song_popularity'] = song['popularity']
 
         data = track_analysis(api, song['id'])
-
-        collected['danceability'] = data[0]
-        collected['energy'] = data[1]
-        songs.append(collected)
+        if (data != None):
+            collected['danceability'] = data[0]
+            collected['energy'] = data[1]
+            songs.append(collected)
+        else:
+            print(song['name'])
 
     return songs
 
@@ -251,11 +257,12 @@ def update_playlist_songs_info(api, raw_two_way):
             song_id = song['song_id']
             analyse = track_analysis(api, song_id)
 
-            danceability = analyse['danceability']
-            energy = analyse['energy']
-            song['danceability'] = danceability
-            song['energy'] = energy
-        
+            if (analyse != None):
+                danceability = analyse['danceability']
+                energy = analyse['energy']
+                song['danceability'] = danceability
+                song['energy'] = energy
+            
             actual_song += 1
             print("Musica em playlist : {} -- Total :{} %".format(playlist,   (actual_song/total_song) * 100))
     
@@ -290,7 +297,7 @@ def main():
     print('GETTING ALL CATEGORIES')
     all_categories = get_categories(api)
 
-    category_1 = "Rock"
+    category_1 = "Pop"
     # category_2 = "Sertanejo"
 
     print('GET ALL PLAYLISTS FROM A CATEGORY')

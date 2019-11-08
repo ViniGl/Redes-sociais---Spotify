@@ -69,7 +69,7 @@ def get_playlists():
 
 def get_musics_of_playlist(playlist_name):
     cursor = connection.cursor()
-    q = ('SELECT musicas.nome FROM playlist , INNER JOIN playlist_musicas using(id_playlist), INNER JOIN musicas using(id_musica) WHERE playlist.nome=%s')
+    q = ('SELECT musicas.nome FROM playlist , INNER JOIN playlist_musicas using(id_playlist), INNER JOIN musicas using(id_musica) WHERE playlist.nome=%s' )
     cursor.execute(q, (playlist_name))
     musicas_da_playlist = cursor.fetchall()
     cursor.close()
@@ -104,13 +104,13 @@ def get_all_relations():
     return musicas
 
 
-musicas = get_all_songs()[:100]
+musicas = get_all_songs()
 # print(musicas)
 
-pls = get_playlists()[:100]
+pls = get_playlists()
 # print(pls)
 
-relations = get_all_relations()[:100]
+relations = get_all_relations()
 # print(relations)
 
 # https://stackoverflow.com/questions/35472402/how-do-display-bipartite-graphs-with-python-networkx-package
@@ -120,8 +120,18 @@ B.add_nodes_from(pls, bipartite=1)
 B.add_edges_from(relations)
 
 
+# print(type(nx.hits(B, max_iter=50000)[0]))
+result = nx.hits(B, max_iter=10000)[0]
 
-print(nx.hits(B, max_iter=50000))
+
+
+
+# values = {}
+# for song in result:
+#     # if result[song] > 0.001:
+#     values.append({str(song): result[song]})
+
+# print()
 
 if write:
     f = open('rock.gml', 'w')
