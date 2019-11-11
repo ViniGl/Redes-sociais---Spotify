@@ -38,7 +38,7 @@ DROP TABLE IF EXISTS `projetoredes`.`musicas` ;
 
 CREATE TABLE IF NOT EXISTS `projetoredes`.`musicas` (
   `id_musicas` INT AUTO_INCREMENT,
-  `nome` VARCHAR(45) NULL,
+  `nome` VARCHAR(450) NULL,
   `id_spotify` VARCHAR(45) NOT NULL UNIQUE,
   `popularidade` INT NOT NULL,
   `duracao` INT NOT NULL,

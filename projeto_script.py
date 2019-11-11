@@ -144,8 +144,8 @@ def top_tracks_filter(api, top_tracks):
     return songs
 
 
-def get_categories(api):
-    categories = api.categories()
+def get_categories(api, sel_country, sel_limit):
+    categories = api.categories(country=sel_country, limit=sel_limit)
     cats = {}
     for i in categories['categories']['items']:
         cats[i['name']] = i['id']
@@ -289,9 +289,9 @@ def main():
 
     #######################AUTHS & CONNECT###############################
     connection = pymysql.connect(
-        host='127.0.0.1',
-        user='megadados',
-        password='megadados2019',
+        host='172.17.0.2',
+        user='root',
+        password='123',
         database='projetoredes',
         autocommit=True)
     # db_connection = partial(run_db_query, connection)
@@ -303,7 +303,7 @@ def main():
     #####################################################################
     
     print('GETTING ALL CATEGORIES')
-    all_categories = get_categories(api)
+    all_categories = get_categories(api, 'BR', 50)
     categories=["Chill","Party","Workout","Hip-Hop","Rock","Reggae","Classical","Electronic/Dance","Blues"]
 
     # print(all_categories)

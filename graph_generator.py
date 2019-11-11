@@ -113,6 +113,7 @@ pls = get_playlists()
 relations = get_all_relations()
 # print(relations)
 
+
 # https://stackoverflow.com/questions/35472402/how-do-display-bipartite-graphs-with-python-networkx-package
 B = nx.Graph()
 B.add_nodes_from(musicas, bipartite=0)  # Add the node attribute "bipartite"
@@ -121,10 +122,10 @@ B.add_edges_from(relations)
 
 
 # print(type(nx.hits(B, max_iter=50000)[0]))
-result = nx.hits(B, max_iter=10000)[0]
+# result = nx.hits(B, max_iter=10000)[0]
 
 
-
+print(result)
 
 # values = {}
 # for song in result:
